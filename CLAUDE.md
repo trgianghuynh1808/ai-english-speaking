@@ -67,5 +67,5 @@ When shipping (from Autopilot, or when the user says "ship"):
    `git checkout main && git pull --ff-only && git merge --squash task/<slug>`
 3. Commit with one Conventional Commit message summarizing the whole task (e.g. `feat(orders): show container line last in recipe`), with a short body listing the main changes and the test cases added. Do not mention the individual step commits or fix cycles.
    - If the branch also touches files outside the task plan (e.g. `scripts/`, tooling, `CLAUDE.md`), unstage them (`git reset -q <paths>`) before this commit and commit them separately afterwards (`chore: ...`), so the feature commit stays clean.
-4. `git push origin main`, then delete the task branch: `git branch -D task/<slug>`.
+4. `git push github main`, then delete the task branch: `git branch -D task/<slug>`.
 5. Report the final commit hash. If the pull or push fails (e.g. remote has new commits, conflicts), stop and tell the user instead of forcing.
