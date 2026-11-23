@@ -1,10 +1,12 @@
+import { RotateCcw } from "lucide-react";
 import type { AnalyzeResponse } from "@/lib/types";
 
 interface FeedbackCardProps {
   analysis: AnalyzeResponse["user_analysis"];
+  onRepeat?: () => void;
 }
 
-export function FeedbackCard({ analysis }: FeedbackCardProps) {
+export function FeedbackCard({ analysis, onRepeat }: FeedbackCardProps) {
   const { raw_transcript, pronunciation_warnings, better_expression } = analysis;
 
   return (
@@ -44,6 +46,17 @@ export function FeedbackCard({ analysis }: FeedbackCardProps) {
           Natural version
         </h4>
         <p className="text-zinc-800">{better_expression}</p>
+        {onRepeat && (
+          <button
+            type="button"
+            data-testid="repeat-button"
+            onClick={onRepeat}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-teal-700 shadow-sm ring-1 ring-teal-200 transition-colors hover:bg-teal-100"
+          >
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            Say it again
+          </button>
+        )}
       </section>
     </div>
   );

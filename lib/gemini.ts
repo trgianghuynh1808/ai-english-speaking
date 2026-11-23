@@ -119,10 +119,12 @@ export async function analyzeAudio({
   audio,
   mimeType,
   history,
+  target,
 }: {
   audio: Buffer;
   mimeType: string;
   history: HistoryTurn[];
+  target?: string;
 }): Promise<AnalyzeResponse> {
   if (process.env.MOCK_GEMINI === "1") {
     return parseAnalyzeResponse(MOCK_RESPONSE);
@@ -152,7 +154,7 @@ export async function analyzeAudio({
       response = await ai.models.generateContent({
         model,
         contents: [
-          { text: buildUserPrompt(history) },
+          { text: buildUserPrompt(history, target) },
           { inlineData: { mimeType, data: audio.toString("base64") } },
         ],
         config: {

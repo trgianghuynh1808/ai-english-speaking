@@ -18,9 +18,23 @@ BOT REPLY:
 OUTPUT FORMAT:
 - Respond with JSON only, matching the provided response schema exactly. No markdown fences, no commentary, no extra fields.`;
 
-export function buildUserPrompt(history: HistoryTurn[]): string {
-  return history
+export function buildUserPrompt(history: HistoryTurn[], target?: string): string {
+  const lines = history
     .slice(-6)
     .map((turn) => `${turn.role === "user" ? "User" : "Coach"}: ${turn.text}`)
     .join("\n");
+
+  const trimmedTarget = target?.trim();
+  if (!trimmedTarget) {
+    return lines;
+  }
+
+  const repeatInstruction = `REPEAT ATTEMPT:
+The user is repeating this model sentence out loud: "${trimmedTarget}"
+- raw_transcript must still record exactly what was actually heard, phonetically, without auto-correction.
+- In pronunciation_warnings, compare what was heard against the model sentence above, and return at most 2 of the most serious issues.
+- better_expression must be exactly the model sentence above.
+- bot_reply.text should give brief, warm praise and then continue with one new specific, concrete question.`;
+
+  return lines ? `${lines}\n\n${repeatInstruction}` : repeatInstruction;
 }

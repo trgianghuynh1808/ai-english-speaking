@@ -10,10 +10,14 @@ export class ClientRateLimitError extends Error {
 export async function analyze(
   blob: Blob,
   history: HistoryTurn[],
+  target?: string,
 ): Promise<AnalyzeResponse> {
   const form = new FormData();
   form.append("audio", blob, "audio.webm");
   form.append("history", JSON.stringify(history));
+  if (target) {
+    form.append("target", target);
+  }
 
   const response = await fetch("/api/analyze", {
     method: "POST",

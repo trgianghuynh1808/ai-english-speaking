@@ -2,6 +2,7 @@ import { analyzeAudio, RateLimitError } from "@/lib/gemini";
 import type { HistoryTurn } from "@/lib/types";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+const MAX_TARGET_CHARS = 300;
 
 function isHistoryTurn(value: unknown): value is HistoryTurn {
   if (typeof value !== "object" || value === null) {
@@ -59,11 +60,27 @@ export async function POST(request: Request) {
     }
   }
 
+  let target: string | undefined;
+  const targetRaw = form.get("target");
+  if (targetRaw !== null) {
+    if (typeof targetRaw !== "string") {
+      return Response.json({ error: "'target' must be a string" }, { status: 400 });
+    }
+    const trimmedTarget = targetRaw.trim();
+    if (trimmedTarget.length > MAX_TARGET_CHARS) {
+      return Response.json({ error: "'target' is too long" }, { status: 400 });
+    }
+    if (trimmedTarget !== "") {
+      target = trimmedTarget;
+    }
+  }
+
   try {
     const result = await analyzeAudio({
       audio: Buffer.from(await audio.arrayBuffer()),
       mimeType: audio.type,
       history,
+      target,
     });
     return Response.json(result);
   } catch (error) {

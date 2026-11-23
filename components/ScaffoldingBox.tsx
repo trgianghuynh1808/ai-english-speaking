@@ -31,7 +31,7 @@ export function ScaffoldingBox({
     >
       {/* Remounting on turnKey gives each bot turn a fresh 5s countdown. */}
       <ScaffoldingContent
-        key={turnKey}
+        key={`${turnKey}-${defaultRevealed ? "r" : "h"}`}
         ideas={ideas}
         sentence_starters={sentence_starters}
         defaultRevealed={defaultRevealed}
