@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Recorder } from "./Recorder";
+import { ChatThread, type Turn } from "./conversation/ChatThread";
+import { CoachPanel } from "./conversation/CoachPanel";
 import { Toolbar } from "./conversation/Toolbar";
-import { TurnList, type Turn } from "./conversation/TurnList";
 import { analyze, ClientRateLimitError } from "@/lib/client";
 import { OPENER } from "@/lib/opener";
 import {
@@ -49,6 +50,15 @@ function findRepeatableTurn(
   return null;
 }
 
+function findLastKindIndex(turns: Turn[], kind: Turn["kind"]): number {
+  for (let i = turns.length - 1; i >= 0; i -= 1) {
+    if (turns[i].kind === kind) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 export function Conversation() {
   const [turns, setTurns] = useState<Turn[]>(INITIAL_TURNS);
   const [restoredCount, setRestoredCount] = useState(0);
@@ -58,6 +68,7 @@ export function Conversation() {
   const [status, setStatus] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [repeatTarget, setRepeatTarget] = useState<string | null>(null);
+  const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null);
   const lockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { speak, cancel } = useSpeech();
 
@@ -108,6 +119,7 @@ export function Conversation() {
     setRestoredCount(0);
     setStatus(null);
     setRepeatTarget(null);
+    setSelectedUserIndex(null);
     if (lockTimeoutRef.current) {
       clearTimeout(lockTimeoutRef.current);
       lockTimeoutRef.current = null;
@@ -135,6 +147,7 @@ export function Conversation() {
         const result = await analyze(blob, history, repeatTarget ?? undefined);
         const isRepeat = repeatTarget !== null;
         setRepeatTarget(null);
+        setSelectedUserIndex(null);
         setTurns((prev) => [
           ...prev,
           {
@@ -181,60 +194,84 @@ export function Conversation() {
       ? "Đang xử lý..."
       : undefined;
 
+  const lastBotIndex = findLastKindIndex(turns, "bot");
+  const lastBotTurn = lastBotIndex >= 0 ? turns[lastBotIndex] : undefined;
+  const hintsScaffolding =
+    lastBotTurn?.kind === "bot" ? lastBotTurn.scaffolding : null;
+
+  const resolvedUserIndex = selectedUserIndex ?? findLastKindIndex(turns, "user");
+  const viewedTurn = resolvedUserIndex >= 0 ? turns[resolvedUserIndex] : undefined;
+  const viewedAnalysis =
+    viewedTurn?.kind === "user" ? viewedTurn.analysis : null;
+
+  const viewedTurnIsRepeatable =
+    repeatable !== null && repeatable.index === resolvedUserIndex;
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <Toolbar
-        autoSpeak={autoSpeak}
-        onToggleAutoSpeak={toggleAutoSpeak}
-        onNewConversation={newConversation}
-      />
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <ChatThread
+          turns={turns}
+          selectedIndex={selectedUserIndex}
+          onSelectUser={setSelectedUserIndex}
+        />
 
-      <TurnList
-        turns={turns}
-        restoredCount={restoredCount}
-        repeatableIndex={repeatable?.index ?? null}
-        onRepeat={repeatable ? handleRepeat : undefined}
-      />
+        <Toolbar
+          autoSpeak={autoSpeak}
+          onToggleAutoSpeak={toggleAutoSpeak}
+          onNewConversation={newConversation}
+        />
 
-      {sending && (
-        <p data-testid="sending-indicator" className="text-center text-sm text-zinc-500">
-          Đang xử lý...
-        </p>
-      )}
-      {status && (
-        <p
-          data-testid="status-message"
-          role="status"
-          className="text-center text-sm text-amber-700"
-        >
-          {status}
-        </p>
-      )}
-
-      {repeatTarget && (
-        <div
-          data-testid="repeat-banner"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2"
-        >
-          <p className="text-sm text-teal-900">
-            <span className="font-semibold">Repeat:</span> {repeatTarget}
+        {sending && (
+          <p data-testid="sending-indicator" className="text-center text-sm text-zinc-500">
+            Đang xử lý...
           </p>
-          <button
-            type="button"
-            data-testid="cancel-repeat-button"
-            onClick={() => setRepeatTarget(null)}
-            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-zinc-600 shadow-sm ring-1 ring-zinc-200 transition-colors hover:bg-zinc-100"
+        )}
+        {status && (
+          <p
+            data-testid="status-message"
+            role="status"
+            className="text-center text-sm text-amber-700"
           >
-            Cancel
-          </button>
-        </div>
-      )}
+            {status}
+          </p>
+        )}
 
-      <Recorder
-        onComplete={handleUserAudio}
-        disabled={recorderDisabled}
-        disabledReason={recorderDisabledReason}
-      />
+        {repeatTarget && (
+          <div
+            data-testid="repeat-banner"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2"
+          >
+            <p className="text-sm text-teal-900">
+              <span className="font-semibold">Repeat:</span> {repeatTarget}
+            </p>
+            <button
+              type="button"
+              data-testid="cancel-repeat-button"
+              onClick={() => setRepeatTarget(null)}
+              className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-zinc-600 shadow-sm ring-1 ring-zinc-200 transition-colors hover:bg-zinc-100"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        <Recorder
+          onComplete={handleUserAudio}
+          disabled={recorderDisabled}
+          disabledReason={recorderDisabledReason}
+        />
+      </div>
+
+      {hintsScaffolding && (
+        <CoachPanel
+          scaffolding={hintsScaffolding}
+          scaffoldingKey={lastBotIndex}
+          defaultRevealed={lastBotIndex < restoredCount}
+          analysis={viewedAnalysis}
+          onRepeat={viewedTurnIsRepeatable ? handleRepeat : undefined}
+        />
+      )}
     </div>
   );
 }

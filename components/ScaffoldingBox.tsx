@@ -114,7 +114,7 @@ function ScaffoldingContent({
       </div>
 
       {!revealed && (
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-zinc-500">
             Hints mở sau {remaining}s — thử tự nói trước nhé!
           </p>
@@ -122,7 +122,7 @@ function ScaffoldingContent({
             type="button"
             data-testid="reveal-button"
             onClick={revealNow}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-teal-700 shadow-sm ring-1 ring-teal-200 transition-colors hover:bg-teal-100"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-teal-700 shadow-sm ring-1 ring-teal-200 transition-colors hover:bg-teal-100"
           >
             <Eye className="h-4 w-4" aria-hidden="true" />
             Reveal now

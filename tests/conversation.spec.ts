@@ -47,14 +47,18 @@ test("T1: record 2s then feedback card and new scaffolding appear", async ({
   await mockAnalyzeRoute(page, 200, mockAnalysis);
 
   await page.goto("/");
-  await expect(page.getByTestId("scaffolding-box")).toHaveCount(1);
+  const hints = page.getByTestId("scaffolding-box");
+  await expect(hints).toHaveCount(1);
+  await expect(hints).toContainText("Check email or messages");
 
   await recordAboutTwoSeconds(page);
 
   const feedback = page.getByTestId("feedback-card");
   await expect(feedback).toBeVisible();
   await expect(feedback).toContainText("working from home");
-  await expect(page.getByTestId("scaffolding-box")).toHaveCount(2);
+  // The single panel box now carries the newest bot turn's hints.
+  await expect(hints).toHaveCount(1);
+  await expect(hints).toContainText("No commute");
 });
 
 test("T2: new scaffolding is blurred until revealed or 5s pass", async ({
@@ -63,15 +67,23 @@ test("T2: new scaffolding is blurred until revealed or 5s pass", async ({
   await mockAnalyzeRoute(page, 200, mockAnalysis);
 
   await page.goto("/");
-  const openerBox = page.getByTestId("scaffolding-box").nth(0);
+  const openerBox = page.getByTestId("scaffolding-box");
   await expect(openerBox.locator(".scaffolding-content")).toHaveCSS(
     "filter",
     "blur(6px)",
   );
 
+  // The opener box is never clicked: it must clear by itself after 5s.
+  await expect(openerBox.locator(".scaffolding-content")).toHaveCSS(
+    "filter",
+    "none",
+    { timeout: 8000 },
+  );
+
   await recordAboutTwoSeconds(page);
 
-  const newBox = page.getByTestId("scaffolding-box").nth(1);
+  // The panel remounts hints for the newest bot turn with a fresh 5s countdown.
+  const newBox = page.getByTestId("scaffolding-box");
   await expect(newBox).toBeVisible();
   await expect(newBox.locator(".scaffolding-content")).toHaveCSS(
     "filter",
@@ -82,13 +94,6 @@ test("T2: new scaffolding is blurred until revealed or 5s pass", async ({
   await expect(newBox.locator(".scaffolding-content")).toHaveCSS(
     "filter",
     "none",
-  );
-
-  // The opener box was never clicked: it must clear by itself after 5s.
-  await expect(openerBox.locator(".scaffolding-content")).toHaveCSS(
-    "filter",
-    "none",
-    { timeout: 8000 },
   );
 });
 

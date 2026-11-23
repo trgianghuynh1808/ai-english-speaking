@@ -14,7 +14,7 @@ export function Toolbar({
   onNewConversation,
 }: ToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-3">
       <button
         type="button"
         data-testid="auto-speak-toggle"

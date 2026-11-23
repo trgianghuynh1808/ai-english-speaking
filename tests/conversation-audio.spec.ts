@@ -107,7 +107,7 @@ test("T1: bot speaks after each turn until auto-speak is turned off", async ({
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
 
   await recordAboutTwoSeconds(page);
-  await expect(page.getByTestId("feedback-card")).toHaveCount(2);
+  await expect(page.getByTestId("user-turn")).toHaveCount(2);
 
   expect(await spokenTexts(page)).toEqual([mockAnalysis.bot_reply.text]);
 });
@@ -125,9 +125,9 @@ test("T2: conversation survives reload and New conversation resets it", async ({
   await page.reload();
 
   await expect(page.getByTestId("feedback-card")).toHaveCount(1);
-  await expect(page.getByTestId("scaffolding-box")).toHaveCount(2);
+  await expect(page.getByTestId("scaffolding-box")).toHaveCount(1);
 
-  const restoredBox = page.getByTestId("scaffolding-box").nth(1);
+  const restoredBox = page.getByTestId("scaffolding-box").first();
   await expect(restoredBox.locator(".scaffolding-content")).toHaveCSS(
     "filter",
     "none",
