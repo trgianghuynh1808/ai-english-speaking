@@ -3,7 +3,8 @@ import type { AnalyzeResponse, HistoryTurn } from "./types";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 import { parseAnalyzeResponse } from "./validate";
 
-const DEFAULT_MODEL = "gemini-3.5-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
+const DEFAULT_FALLBACK_MODEL = "gemini-3.6-flash";
 
 export class RateLimitError extends Error {
   constructor(message = "Gemini rate limit reached") {
@@ -133,34 +134,48 @@ export async function analyzeAudio({
   }
 
   // The SDK retries 5 times with backoff by default (up to ~90s on a 503); keep the turn snappy.
+  // One attempt per model (the SDK default of 5 retries burns the 5 RPM free quota and hangs
+  // for up to ~90s); on overload (503/504/timeout) we fall back to a second model instead.
   const ai = new GoogleGenAI({
     apiKey,
-    httpOptions: { timeout: 20_000, retryOptions: { attempts: 2 } },
+    httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
   });
-  const response = await ai.models
-    .generateContent({
-      model: process.env.GEMINI_MODEL ?? DEFAULT_MODEL,
-      contents: [
-        { text: buildUserPrompt(history) },
-        { inlineData: { mimeType, data: audio.toString("base64") } },
-      ],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.2,
-        // Latency matters more than deep reasoning for a spoken turn.
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-      },
-    })
-    .catch((error: unknown) => {
+
+  const primary = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
+  const fallback = process.env.GEMINI_FALLBACK_MODEL ?? DEFAULT_FALLBACK_MODEL;
+  const models = fallback && fallback !== primary ? [primary, fallback] : [primary];
+
+  let response: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
+  let lastError: unknown;
+  for (const model of models) {
+    try {
+      response = await ai.models.generateContent({
+        model,
+        contents: [
+          { text: buildUserPrompt(history) },
+          { inlineData: { mimeType, data: audio.toString("base64") } },
+        ],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: RESPONSE_SCHEMA,
+          temperature: 0.2,
+          // Latency matters more than deep reasoning for a spoken turn.
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        },
+      });
+      break;
+    } catch (error) {
       if (isRateLimitError(error)) {
-        throw new RateLimitError(
-          error instanceof Error ? error.message : undefined,
-        );
+        throw new RateLimitError(error instanceof Error ? error.message : undefined);
       }
-      throw error;
-    });
+      lastError = error;
+      console.error(`gemini ${model} failed, trying next model if any`);
+    }
+  }
+  if (!response) {
+    throw lastError instanceof Error ? lastError : new Error("Gemini request failed");
+  }
 
   const text = response.text;
   if (!text) {

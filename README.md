@@ -74,7 +74,8 @@ npm run dev                  # http://localhost:3000
 | Variable | Description |
 |---|---|
 | `GEMINI_API_KEY` | Key from [Google AI Studio](https://aistudio.google.com/apikey) (free tier is enough for development). |
-| `GEMINI_MODEL` | Gemini model id, default `gemini-3.5-flash`. Never hardcoded; change it here. |
+| `GEMINI_FALLBACK_MODEL` | Optional second model tried when the first returns 503/504 or times out (default `gemini-3.6-flash`). |
+| `GEMINI_MODEL` | Gemini model id, default `gemini-3.5-flash-lite` (fast). Never hardcoded; change it here. |
 
 Scripts: `npm run typecheck`, `npm run lint`, `npx playwright test` (uses a fake microphone and never calls the real Gemini API).
 

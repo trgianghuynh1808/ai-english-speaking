@@ -20,7 +20,7 @@ Browser (MediaRecorder -> audio blob + conversation history) -> Next.js API rout
 
 ## Codebase Map
 
-Project is new; structure will be added as code lands. Planned: `app/` (pages + `api/analyze/route.ts`), `components/` (Recorder, FeedbackCard, ScaffoldingBox), `lib/` (gemini client, system prompt, JSON schema types). Response schema: `BLUEPRINT.md` section 4. Secrets go in `.env.local`, never committed. Env vars: `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-3.5-flash`; never hardcode the model name in code).
+Project is new; structure will be added as code lands. Planned: `app/` (pages + `api/analyze/route.ts`), `components/` (Recorder, FeedbackCard, ScaffoldingBox), `lib/` (gemini client, system prompt, JSON schema types). Response schema: `BLUEPRINT.md` section 4. Secrets go in `.env.local`, never committed. Env vars: `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-3.5-flash-lite`, with `GEMINI_FALLBACK_MODEL` default `gemini-3.6-flash` used on 503/504/timeout; never hardcode model names in code).
 
 ## Commands
 
