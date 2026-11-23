@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI English Speaking Coach
 
-## Getting Started
+A web app for practicing spoken English, built for learners who read and listen well (~80% passive comprehension) but blank out when speaking and are unsure about pronunciation.
 
-First, run the development server:
+> **Status:** early development. The scaffold is in place; the audio API, recorder and feedback UI are being built task by task.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Why it works differently
+
+Standard speech-to-text (and real-time voice modes) auto-correct mispronounced words from context, which hides exactly the mistakes a learner needs to see. This app instead:
+
+1. records **raw audio** in the browser (`MediaRecorder`, `.webm`), and
+2. sends the audio file **directly to a multimodal LLM (Gemini)**, which is told to transcribe what it *actually heard*, without context-based correction, and flag mispronounced words or missing ending sounds.
+
+## How the parts work together
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Learner
+    participant B as Browser (Next.js UI)
+    participant A as API route (/api/analyze)
+    participant G as Gemini API (multimodal)
+    participant T as Text-to-Speech (speechSynthesis)
+
+    U->>B: Hold / click to record (getUserMedia + MediaRecorder)
+    B->>A: multipart form: raw audio blob (.webm) + conversation history
+    A->>G: audio + strict phonetic system prompt (JSON output)
+    G-->>A: JSON: raw transcript, pronunciation warnings, better expression, bot reply, scaffolding
+    A-->>B: validated JSON
+    B-->>U: Feedback card (what was heard, tips, natural recast)
+    B->>T: Read the bot's next question aloud
+    B-->>U: Hidden scaffolding (ideas + sentence starters), blurred for 5s, then revealable
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Part | Responsibility |
+|---|---|
+| **Browser** | Records audio, keeps the conversation state, renders feedback and scaffolding, plays TTS. |
+| **API route** | Stateless. Receives audio + history, calls Gemini, validates and returns the JSON. Holds the API key. |
+| **Gemini** | Listens to the waveform, returns phonetic transcript, warnings, recast and the next bot turn. |
+| **TTS** | Browser-native `speechSynthesis` reads the bot's questions aloud. |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Response shape
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```json
+{
+  "user_analysis": {
+    "raw_transcript": "what the model actually heard",
+    "pronunciation_warnings": [{ "heard": "...", "intended": "...", "tip": "..." }],
+    "better_expression": "natural English version (Vietnamese mixed in is translated)"
+  },
+  "bot_reply": {
+    "text": "reply and next question",
+    "hidden_scaffolding": { "ideas": ["..."], "sentence_starters": ["..."] }
+  }
+}
+```
 
-## Learn More
+Types live in `lib/types.ts`. The full spec is in [`BLUEPRINT.md`](BLUEPRINT.md).
 
-To learn more about Next.js, take a look at the following resources:
+## Teaching principles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Scaffolding:** every bot turn carries 2–3 idea hints and sentence starters, blurred for 5 seconds to encourage recall.
+- **Code-switching & recasting:** mixing Vietnamese is welcome; the bot recasts it into natural English, never scolds.
+- **Micro-correction:** at most 1–2 pronunciation/grammar fixes per turn.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Getting started
 
-## Deploy on Vercel
+```bash
+npm install
+cp .env.example .env.local   # then set GEMINI_API_KEY
+npm run dev                  # http://localhost:3000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Description |
+|---|---|
+| `GEMINI_API_KEY` | Key from [Google AI Studio](https://aistudio.google.com/apikey) (free tier is enough for development). |
+| `GEMINI_MODEL` | Gemini model id, default `gemini-3.8-flash`. Never hardcoded; change it here. |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Scripts: `npm run typecheck`, `npm run lint`, `npx playwright test` (uses a fake microphone and never calls the real Gemini API).
+
+## Tech stack
+
+Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react · Gemini API · Playwright
+
+## How this repo is built (Claude + OpenCode)
+
+Development is split between two coding agents using [claude-opencode-kit](https://github.com/trgianghuynh1808/claude-opencode-kit): **Claude Code** plans, verifies, reviews and ships; **OpenCode** writes the code. They communicate only through the repo.
+
+```mermaid
+flowchart LR
+    Me([Developer]) -- approves plan --> C[Claude Code<br/>plan · verify · review · ship]
+    C -- "task file + branch<br/>scripts/handoff.sh" --> O[OpenCode<br/>implements step by step]
+    O -- "commits + status" --> C
+    C -- squash to main --> Repo[(main)]
+```
+
+| File | Role |
+|---|---|
+| `AGENTS.md` | Stable project knowledge shared by all agents. |
+| `CLAUDE.md` | Claude-only workflow: plan format, hand-off, review, ship. |
+| `.agents/tasks/*.md` | One file per task: plan, context, test cases, status, verification. |
+
+## License
+
+TBD.
