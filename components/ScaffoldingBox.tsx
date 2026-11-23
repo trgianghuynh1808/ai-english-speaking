@@ -7,6 +7,7 @@ interface ScaffoldingBoxProps {
   ideas: string[];
   sentence_starters: string[];
   turnKey: string | number;
+  defaultRevealed?: boolean;
 }
 
 const REVEAL_SECONDS = 5;
@@ -14,12 +15,14 @@ const REVEAL_SECONDS = 5;
 interface ScaffoldingContentProps {
   ideas: string[];
   sentence_starters: string[];
+  defaultRevealed?: boolean;
 }
 
 export function ScaffoldingBox({
   ideas,
   sentence_starters,
   turnKey,
+  defaultRevealed = false,
 }: ScaffoldingBoxProps) {
   return (
     <div
@@ -27,17 +30,29 @@ export function ScaffoldingBox({
       className="w-full rounded-xl border border-teal-200 bg-teal-50 p-4"
     >
       {/* Remounting on turnKey gives each bot turn a fresh 5s countdown. */}
-      <ScaffoldingContent key={turnKey} ideas={ideas} sentence_starters={sentence_starters} />
+      <ScaffoldingContent
+        key={turnKey}
+        ideas={ideas}
+        sentence_starters={sentence_starters}
+        defaultRevealed={defaultRevealed}
+      />
     </div>
   );
 }
 
-function ScaffoldingContent({ ideas, sentence_starters }: ScaffoldingContentProps) {
+function ScaffoldingContent({
+  ideas,
+  sentence_starters,
+  defaultRevealed = false,
+}: ScaffoldingContentProps) {
   const [remaining, setRemaining] = useState(REVEAL_SECONDS);
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(defaultRevealed);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (defaultRevealed) {
+      return;
+    }
     const startedAt = Date.now();
     intervalRef.current = setInterval(() => {
       const left = Math.max(
@@ -59,7 +74,7 @@ function ScaffoldingContent({ ideas, sentence_starters }: ScaffoldingContentProp
       }
       intervalRef.current = null;
     };
-  }, []);
+  }, [defaultRevealed]);
 
   const revealNow = () => {
     if (intervalRef.current) {
