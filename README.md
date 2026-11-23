@@ -87,11 +87,11 @@ Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react · Gemini API
 Development is split between two coding agents using [claude-opencode-kit](https://github.com/trgianghuynh1808/claude-opencode-kit): **Claude Code** plans, verifies, reviews and ships; **OpenCode** writes the code. They communicate only through the repo.
 
 ```mermaid
-flowchart LR
-    Me([Developer]) -- approves plan --> C[Claude Code<br/>plan · verify · review · ship]
-    C -- "task file + branch<br/>scripts/handoff.sh" --> O[OpenCode<br/>implements step by step]
-    O -- "commits + status" --> C
-    C -- squash to main --> Repo[(main)]
+flowchart TD
+    Me([Developer]) -->|approves plan| C["Claude Code<br/>plan · verify · review · ship"]
+    C -->|"task file + branch<br/>(handoff.sh)"| O["OpenCode<br/>implements step by step"]
+    O -->|"commits + status"| C
+    C -->|squash to main| Repo[("main")]
 ```
 
 | File | Role |
