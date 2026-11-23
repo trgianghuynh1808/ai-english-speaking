@@ -1,4 +1,4 @@
-import { analyzeAudio } from "@/lib/gemini";
+import { analyzeAudio, RateLimitError } from "@/lib/gemini";
 import type { HistoryTurn } from "@/lib/types";
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
@@ -67,6 +67,9 @@ export async function POST(request: Request) {
     });
     return Response.json(result);
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return Response.json({ error: "rate_limited" }, { status: 429 });
+    }
     console.error(
       "analyze failed:",
       error instanceof Error ? error.message : String(error),

@@ -1,0 +1,23 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - heading "AI English Speaking Coach" [level=1] [ref=e3]
+    - generic [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Let's start simple. Walk me through a normal workday — what do you usually do first in the morning?
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - heading "Ideas" [level=4] [ref=e11]
+            - list [ref=e12]:
+              - listitem [ref=e13]: Check email or messages
+              - listitem [ref=e14]: Make coffee and plan the day
+              - listitem [ref=e15]: Review tasks or meetings on the calendar
+          - generic [ref=e16]:
+            - heading "Sentence starters" [level=4] [ref=e17]
+            - list [ref=e18]:
+              - listitem [ref=e19]: “Usually, the first thing I do is...”
+              - listitem [ref=e20]: “In the morning, I normally...”
+      - generic [ref=e27]:
+        - button "Start recording" [active] [ref=e28]
+        - paragraph [ref=e43]: Không truy cập được mic. Hãy cho phép dùng micro trong trình duyệt rồi thử lại nhé.
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]
+  - alert [ref=e32]

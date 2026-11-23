@@ -5,6 +5,24 @@ import { parseAnalyzeResponse } from "./validate";
 
 const DEFAULT_MODEL = "gemini-3.5-flash";
 
+export class RateLimitError extends Error {
+  constructor(message = "Gemini rate limit reached") {
+    super(message);
+    this.name = "RateLimitError";
+  }
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+  if ("status" in error && (error as { status?: unknown }).status === 429) {
+    return true;
+  }
+  const message = error instanceof Error ? error.message : "";
+  return /"code"\s*:\s*429/.test(message);
+}
+
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -119,21 +137,30 @@ export async function analyzeAudio({
     apiKey,
     httpOptions: { timeout: 20_000, retryOptions: { attempts: 2 } },
   });
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? DEFAULT_MODEL,
-    contents: [
-      { text: buildUserPrompt(history) },
-      { inlineData: { mimeType, data: audio.toString("base64") } },
-    ],
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-      temperature: 0.2,
-      // Latency matters more than deep reasoning for a spoken turn.
-      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-    },
-  });
+  const response = await ai.models
+    .generateContent({
+      model: process.env.GEMINI_MODEL ?? DEFAULT_MODEL,
+      contents: [
+        { text: buildUserPrompt(history) },
+        { inlineData: { mimeType, data: audio.toString("base64") } },
+      ],
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMA,
+        temperature: 0.2,
+        // Latency matters more than deep reasoning for a spoken turn.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+      },
+    })
+    .catch((error: unknown) => {
+      if (isRateLimitError(error)) {
+        throw new RateLimitError(
+          error instanceof Error ? error.message : undefined,
+        );
+      }
+      throw error;
+    });
 
   const text = response.text;
   if (!text) {
