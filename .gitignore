@@ -1,0 +1,6 @@
+.agents/queue/
+.agents/status/
+.agents/run.log
+test-results/
+playwright-report/
+.env*.local
