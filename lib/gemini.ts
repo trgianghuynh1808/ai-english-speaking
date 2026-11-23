@@ -1,9 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import type { AnalyzeResponse, HistoryTurn } from "./types";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 import { parseAnalyzeResponse } from "./validate";
 
-const DEFAULT_MODEL = "gemini-3.8-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash";
 
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -114,7 +114,11 @@ export async function analyzeAudio({
     throw new Error("GEMINI_API_KEY is not configured");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  // The SDK retries 5 times with backoff by default (up to ~90s on a 503); keep the turn snappy.
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { timeout: 20_000, retryOptions: { attempts: 2 } },
+  });
   const response = await ai.models.generateContent({
     model: process.env.GEMINI_MODEL ?? DEFAULT_MODEL,
     contents: [
@@ -126,6 +130,8 @@ export async function analyzeAudio({
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
       temperature: 0.2,
+      // Latency matters more than deep reasoning for a spoken turn.
+      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
   });
 
