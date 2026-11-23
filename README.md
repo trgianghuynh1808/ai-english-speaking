@@ -85,7 +85,7 @@ Next.js (App Router) · TypeScript · Tailwind CSS · lucide-react · Gemini API
 
 ## How this repo is built (Claude + OpenCode)
 
-Development is split between two coding agents using [claude-opencode-kit](https://github.com/trgianghuynh1808/claude-opencode-kit): **Claude Code** plans, verifies, reviews and ships; **OpenCode** writes the code. They communicate only through the repo.
+Development is split between two coding agents using [claude-opencode-kit](https://github.com/trgianghuynh1808/claude-opencode-agentic-kit): **Claude Code** plans, verifies, reviews and ships; **OpenCode** writes the code. They communicate only through the repo.
 
 ```mermaid
 flowchart TD
