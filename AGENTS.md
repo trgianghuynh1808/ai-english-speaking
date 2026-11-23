@@ -62,6 +62,16 @@ TypeScript strict, functional React components, Tailwind for styling. Code ident
 - Commit after each step with a clear message.
 - Before finishing: tick the plan checkboxes and update "Trạng thái hiện tại" and "Test status" in the task file.
 
+## Documentation Rules
+
+After finishing anything new (feature, behavior change, API field, env var, script, folder or dependency change), double-check the docs and update whatever is now out of date, in the same task:
+- `README.md`: Features, How the parts work together (diagram), API, environment variables, Scripts, Project structure, Tech stack. Compare it against the code, not against memory.
+- `BLUEPRINT.md`: only if the product spec or the JSON schema changed.
+- `AGENTS.md`: Architecture, Codebase Map, Commands, Environment Notes, constraints.
+- Keep docs in English and consistent with each other; remove statements that are no longer true instead of adding a note next to them.
+- If nothing needs changing, say so explicitly in the task file's "Trạng thái hiện tại" (e.g. "Docs checked: no change needed").
+
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
